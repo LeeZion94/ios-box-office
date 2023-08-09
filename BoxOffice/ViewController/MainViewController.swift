@@ -30,7 +30,6 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         
         activityIndicatorView.center = view.center
         activityIndicatorView.style = .large
-        activityIndicatorView.startAnimating()
         return activityIndicatorView
     }()
     
@@ -101,6 +100,7 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         }
         
         navigationItem.title = targetDate
+        activityIndicatorView.startAnimating()
         usecase.fetchDailyBoxOffice(targetDate: targetDate.replacingOccurrences(of: "-", with: ""))
     }
     
