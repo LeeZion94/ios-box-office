@@ -38,4 +38,11 @@ extension AppCoordinator: MainViewControllerDelegate {
         useCase.delegate = movieDetailViewController
         navigationController.pushViewController(movieDetailViewController, animated: true)
     }
+    
+    func pushCalendarViewController(_ viewController: MainViewController, _ targetDate: String) {
+        var calendarViewController = CalendarViewController(targetDate)
+        
+        calendarViewController.delegate = viewController
+        viewController.present(calendarViewController, animated: true)
+    }
 }

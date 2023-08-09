@@ -9,6 +9,7 @@ import UIKit
 
 protocol MainViewControllerDelegate: AnyObject {
     func pushMovieDetailViewController(_ movieCode: String, _ movieName: String)
+    func pushCalendarViewController(_ viewController: MainViewController, _ targetDate: String)
 }
 
 protocol MainViewControllerUseCaseDelegate: AnyObject {
@@ -62,6 +63,7 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
     }()
     
     private var diffableDataSource: UICollectionViewDiffableDataSource<Section, MovieInformationDTO>?
+    private var selectedTargetDate: String?
     
     init(_ usecase: MainViewControllerUseCase) {
         self.usecase = usecase
@@ -86,12 +88,20 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
     private func setUpViewController() {
         view.backgroundColor = .systemBackground
         navigationItem.title = usecase.yesterdayDate
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "날짜선택", style: .plain, target: self, action: #selector(didTappedDateChooseButton))
     }
     
     private func setUpViewControllerContents() {
-        let targetDate = usecase.yesterdayDate.replacingOccurrences(of: "-", with: "")
+        var targetDate = ""
         
-        usecase.fetchDailyBoxOffice(targetDate: targetDate)
+        if let selectedTargetDate = selectedTargetDate {
+            targetDate = selectedTargetDate
+        } else {
+            targetDate = usecase.yesterdayDate
+        }
+        
+        navigationItem.title = targetDate
+        usecase.fetchDailyBoxOffice(targetDate: targetDate.replacingOccurrences(of: "-", with: ""))
     }
     
     private func configureUI() {
@@ -124,6 +134,12 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         if self.activityIndicatorView.isAnimating {
             self.activityIndicatorView.stopAnimating()
         }
+    }
+    
+    @objc func didTappedDateChooseButton() {
+        guard let targetDate = selectedTargetDate == nil ? usecase.yesterdayDate : selectedTargetDate else { return }
+        
+        delegate?.pushCalendarViewController(self, targetDate)
     }
 }
 
@@ -158,5 +174,13 @@ extension MainViewController: UICollectionViewDelegate {
         
         delegate?.pushMovieDetailViewController(movieCode, movieName)
         collectionView.deselectItem(at: indexPath, animated: true)
+    }
+}
+
+// MARK: - CalendarViewDelegate Delegate
+extension MainViewController: CalendarViewControllerDelegate {
+    func didSelectedTargetDate(_ targetDate: String) {
+        selectedTargetDate = targetDate
+        setUpViewControllerContents()
     }
 }
