@@ -9,14 +9,14 @@ import XCTest
 @testable import BoxOffice
 
 final class URLRequestMakeTests: XCTestCase {
-    struct StubURLRequestMake: CanMakeURLRequest {}
+    struct StubURLRequestMake: URLRequestProvider {}
     
-    private var sut: CanMakeURLRequest!
-
+    private var sut: URLRequestProvider!
+    
     override func setUpWithError() throws {
         sut = StubURLRequestMake()
     }
-
+    
     override func tearDownWithError() throws {
         sut = nil
     }
@@ -26,7 +26,7 @@ final class URLRequestMakeTests: XCTestCase {
         let expectaion = "http://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json?targetDt=20190201"
         let expectionURL = URL(string: expectaion)
         let expectaionURLRequest = URLRequest(url: expectionURL!)
-
+        
         //when
         let baseURL = BaseURL.boxOffice
         let path = BoxOfficeURLPath.daily
@@ -38,5 +38,4 @@ final class URLRequestMakeTests: XCTestCase {
         //then
         XCTAssertEqual(expectaionURLRequest, urlRequest)
     }
-    
 }
