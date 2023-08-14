@@ -269,24 +269,26 @@ final class MovieDetailView: UIView {
             self.genresContentLabel.text = movieDetailInformationDTO.genres.joined(separator: ", ")
             self.movieActorsContentLabel.text = movieDetailInformationDTO.movieActors.joined(separator: ", ")
             
-            if movieDetailInformationDTO.isMovieActorsEmpty {
-                self.movieActorsStackView.isHidden = true
-            }
+            self.movieActorsStackView.isHidden = movieDetailInformationDTO.isMovieActorsEmpty
         }
     }
     
     func setUpImageContent(_ movieDetailImageDTO: MovieDetailImageDTO) {
-        guard let imageURL = URL(string: movieDetailImageDTO.imageURL),
-                let imageData = try? Data(contentsOf: imageURL) else { return }
-
-        DispatchQueue.main.async {
-            let imageRatio = Double(movieDetailImageDTO.height) / Double(movieDetailImageDTO.width)
-            let imageWidth = self.bounds.width
+        guard let imageURL = URL(string: movieDetailImageDTO.imageURL) else { return }
+        URLSession.shared.dataTask(with: imageURL) { data, _, error in
+            guard let data = data, error == nil else {
+                return
+            }
             
-            self.activityIndicatorView.stopAnimating()
-            self.imageView.heightAnchor.constraint(equalToConstant: imageWidth * imageRatio).isActive = true
-            self.imageView.image = UIImage(data: imageData)
-        }
+            DispatchQueue.main.async {
+                let imageRatio = Double(movieDetailImageDTO.height) / Double(movieDetailImageDTO.width)
+                let imageWidth = self.bounds.width
+                
+                self.activityIndicatorView.stopAnimating()
+                self.imageView.heightAnchor.constraint(equalToConstant: imageWidth * imageRatio).isActive = true
+                self.imageView.image = UIImage(data: data)
+            }
+        }.resume()
     }
     
     private func setUpLayout() {

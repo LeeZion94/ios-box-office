@@ -54,8 +54,6 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
             }
         }
     }
-    
-    
 }
 
 extension MovieDetailViewControllerUseCaseImplementation {
