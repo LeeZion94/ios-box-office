@@ -17,13 +17,9 @@ protocol MovieDetailViewControllerUseCaseDelegate: AnyObject {
 final class MovieDetailViewController: UIViewController, CanShowNetworkRequestFailureAlert {
     private let movieDetailView = MovieDetailView()
     private let usecase: MovieDetailViewControllerUseCase
-    private let movieCode: String
-    private let movieName: String
     
-    init(usecase: MovieDetailViewControllerUseCase, movieCode: String, movieName: String) {
+    init(usecase: MovieDetailViewControllerUseCase) {
         self.usecase = usecase
-        self.movieCode = movieCode
-        self.movieName = movieName
         
         super.init(nibName: nil, bundle: nil)
     }
@@ -45,20 +41,15 @@ final class MovieDetailViewController: UIViewController, CanShowNetworkRequestFa
     
     private func setUpViewController() {
         view.backgroundColor = .systemBackground
-        navigationItem.title = movieName
+        navigationItem.title = usecase.movieName
     }
     
     private func setUpViewControllerContents() {
         fetchMovieDetailInformation()
-        fetchMovieDetailImage()
     }
     
     private func fetchMovieDetailInformation() {
-        usecase.fetchMovieDetailInformation(movieCode)
-    }
-    
-    private func fetchMovieDetailImage() {
-        usecase.fetchMovieDetailImage(movieName)
+        usecase.fetchMovieDetailInformation(usecase.movieCode, usecase.movieName)
     }
 }
 
@@ -77,6 +68,6 @@ extension MovieDetailViewController: MovieDetailViewControllerUseCaseDelegate  {
     }
     
     func failFetchMovieDetailImage(_ errorDescription: String?) {
-        showNetworkFailAlert(message: errorDescription, retryFunction: fetchMovieDetailImage)
+        showNetworkFailAlert(message: errorDescription, retryFunction: fetchMovieDetailInformation)
     }
 }
