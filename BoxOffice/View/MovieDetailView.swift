@@ -17,6 +17,15 @@ final class MovieDetailView: UIView {
         return activityIndicatorView
     }()
     
+    private let loadingView: UIView = {
+        let view = UIView()
+        
+        view.backgroundColor = UIColor(white: 0, alpha: 0.7)
+        view.backgroundColor = .systemBackground
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
     private let scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         
@@ -258,7 +267,10 @@ final class MovieDetailView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    let dispatchGroup = DispatchGroup()
+    
     func setUpContents(_ movieDetailInformationDTO: MovieDetailInformationDTO) {
+        dispatchGroup.enter()
         DispatchQueue.main.async {
             self.directorContentLabel.text = movieDetailInformationDTO.directors.joined(separator: ", ")
             self.productionYearContentLabel.text = movieDetailInformationDTO.productYear
@@ -270,10 +282,16 @@ final class MovieDetailView: UIView {
             self.movieActorsContentLabel.text = movieDetailInformationDTO.movieActors.joined(separator: ", ")
             
             self.movieActorsStackView.isHidden = movieDetailInformationDTO.isMovieActorsEmpty
+            self.dispatchGroup.leave()
+            self.dispatchGroup.notify(queue: .main) {
+                self.hideLoading()
+                self.activityIndicatorView.stopAnimating()
+            }
         }
     }
     
     func setUpImageContent(_ movieDetailImageDTO: MovieDetailImageDTO) {
+        dispatchGroup.enter()
         guard let imageURL = URL(string: movieDetailImageDTO.imageURL) else { return }
         URLSession.shared.dataTask(with: imageURL) { data, _, error in
             guard let data = data, error == nil else {
@@ -284,14 +302,21 @@ final class MovieDetailView: UIView {
                 let imageRatio = Double(movieDetailImageDTO.height) / Double(movieDetailImageDTO.width)
                 let imageWidth = self.bounds.width
                 
-                self.activityIndicatorView.stopAnimating()
+              
                 self.imageView.heightAnchor.constraint(equalToConstant: imageWidth * imageRatio).isActive = true
                 self.imageView.image = UIImage(data: data)
+                
+                self.dispatchGroup.leave()
+                self.dispatchGroup.notify(queue: .main) {
+                    self.hideLoading()
+                    self.activityIndicatorView.stopAnimating()
+                }
             }
         }.resume()
     }
     
     private func setUpLayout() {
+        showLoading()
         setUpScrollViewLayout()
         setUpContentViewLayout()
         setUpImageViewLayout()
@@ -306,10 +331,25 @@ final class MovieDetailView: UIView {
         setUpMovieActorsStackViewLayout()
         setUpActivityIndicatorViewLayout()
     }
+    
+    private func hideLoading() {
+        loadingView.removeFromSuperview()
+    }
 }
 
 // MARK: - setUpLayout
 extension MovieDetailView {
+    private func showLoading() {
+        addSubview(loadingView)
+        
+        NSLayoutConstraint.activate([
+            loadingView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            loadingView.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
+            loadingView.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
+            loadingView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
+        ])
+    }
+    
     private func setUpScrollViewLayout() {
         addSubview(scrollView)
         
@@ -440,11 +480,11 @@ extension MovieDetailView {
     }
     
     private func setUpActivityIndicatorViewLayout() {
-        addSubview(activityIndicatorView)
+        loadingView.addSubview(activityIndicatorView)
         
         NSLayoutConstraint.activate([
-            activityIndicatorView.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
-            activityIndicatorView.centerYAnchor.constraint(equalTo: imageView.centerYAnchor)
+            activityIndicatorView.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
+            activityIndicatorView.centerYAnchor.constraint(equalTo: loadingView.centerYAnchor)
         ])
     }
 }
