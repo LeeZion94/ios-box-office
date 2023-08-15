@@ -13,8 +13,33 @@ protocol MainViewControllerUseCaseDelegate: AnyObject {
 }
 
 final class MainViewController: UIViewController, CanShowNetworkRequestFailureAlert {
+    enum CollectionViewType {
+        case icon
+        case list
+        
+        var changeModeName: String {
+            switch self {
+            case .icon:
+                return "리스트"
+            case .list:
+                return "아이콘"
+            }
+        }
+    }
+    
     enum Section {
         case main
+    }
+    
+    private var collectionViewMode: CollectionViewType = .list {
+        didSet {
+            DispatchQueue.global().async {
+                guard var snapShot = self.diffableDataSource?.snapshot() else { return }
+
+                snapShot.reloadSections([.main])
+                self.diffableDataSource?.apply(snapShot)
+            }
+        }
     }
     
     private let usecase: MainViewControllerUseCase
@@ -38,7 +63,7 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         return refreshControl
     }()
     
-    private let compositionalLayout: UICollectionViewCompositionalLayout = {
+    private let listCompositionalLayout: UICollectionViewCompositionalLayout = {
         var listConfiguration = UICollectionLayoutListConfiguration(appearance: .plain)
         
         listConfiguration.separatorConfiguration.bottomSeparatorInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
@@ -47,8 +72,21 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         return compositionalLayout
     }()
     
+    private let iconCompositionalLayout: UICollectionViewCompositionalLayout = {
+        let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1/2), heightDimension: .fractionalHeight(1))
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        item.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalWidth(0.5))
+        let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+        group.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 5)
+        let section = NSCollectionLayoutSection(group: group)
+        let compositionalLayout = UICollectionViewCompositionalLayout(section: section)
+        
+        return compositionalLayout
+    }()
+    
     private lazy var collectionView: UICollectionView = {
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: compositionalLayout)
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: listCompositionalLayout)
         
         collectionView.delegate = self
         collectionView.refreshControl = refreshControl
@@ -74,13 +112,24 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         configureUI()
         setUpConstraints()
         setUpViewController()
+        setUpToolBar()
         setUpViewControllerContents()
         setUpDiffableDataSource()
     }
     
+    
     private func setUpViewController() {
         view.backgroundColor = .systemBackground
         navigationItem.title = usecase.yesterdayDate
+    }
+    
+    private func setUpToolBar() {
+        navigationController?.isToolbarHidden = false
+        
+        let leftFlexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
+        let barButtonItem = UIBarButtonItem(title: "화면 모드 변경", style: .plain, target: self, action: #selector(didTappedChangeMode))
+        let rightflexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
+        toolbarItems = [leftFlexibleSpace, barButtonItem, rightflexibleSpace]
     }
     
     private func setUpViewControllerContents() {
@@ -103,13 +152,23 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
     }
     
     private func setUpDiffableDataSource() {
-        let cellResgistration = UICollectionView.CellRegistration<MainCollectionViewCell, MovieInformationDTO> { cell, indexPath, movieInformation in
+        let listCellResgistration = UICollectionView.CellRegistration<MainCollectionViewCell, MovieInformationDTO> { cell, indexPath, movieInformation in
             
             cell.setUpContent(movieInformation)
         }
         
+        let iconCellResgistration = UICollectionView.CellRegistration<MainCollectionViewIconCell, MovieInformationDTO> { cell, indexPath, movieInformation in
+
+            cell.setUpContent(movieInformation)
+        }
+        
         diffableDataSource = UICollectionViewDiffableDataSource<Section, MovieInformationDTO>(collectionView: collectionView, cellProvider: { collectionView, indexPath, movieInformation in
-            return collectionView.dequeueConfiguredReusableCell(using: cellResgistration, for: indexPath, item: movieInformation)
+            switch self.collectionViewMode {
+            case .list:
+                return collectionView.dequeueConfiguredReusableCell(using: listCellResgistration, for: indexPath, item: movieInformation)
+            case .icon:
+                return collectionView.dequeueConfiguredReusableCell(using: iconCellResgistration, for: indexPath, item: movieInformation)
+            }
         })
     }
     
@@ -118,6 +177,29 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         
         if self.activityIndicatorView.isAnimating {
             self.activityIndicatorView.stopAnimating()
+        }
+    }
+    
+    @objc private func didTappedChangeMode() {
+        let alertController = UIAlertController()
+        let changeAction = UIAlertAction(title: collectionViewMode.changeModeName, style: .default) { _ in
+            self.changeCollectionViewMode()
+        }
+        let cancelAction = UIAlertAction(title: "취소", style: .cancel)
+
+        alertController.title = "화면 모드 변경"
+        alertController.addAction(changeAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: true)
+    }
+    
+    private func changeCollectionViewMode() {
+        if collectionViewMode == .list {
+            collectionView.setCollectionViewLayout(iconCompositionalLayout, animated: true)
+            collectionViewMode = .icon
+        } else {
+            collectionView.setCollectionViewLayout(listCompositionalLayout, animated: true)
+            collectionViewMode = .list
         }
     }
 }

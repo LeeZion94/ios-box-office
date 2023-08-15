@@ -7,7 +7,11 @@
 
 import UIKit
 
-final class MainCollectionViewCell: UICollectionViewListCell {
+protocol MainCollectionViewCellChangable: UICollectionViewCell {
+    func setUpContent(_ movieInformation: MovieInformationDTO)
+}
+
+final class MainCollectionViewCell: UICollectionViewListCell, MainCollectionViewCellChangable {
     static let reuseIdentifier = "cell"
     
     private let rankLabel: UILabel = {
