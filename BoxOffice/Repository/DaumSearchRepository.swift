@@ -5,10 +5,11 @@
 //  Created by Zion, Hemg on 2023/08/09.
 //
 
-import Foundation
+import UIKit
 
 protocol DaumSearchRepository {
     func fetchDaumImageSearchInformation(_ movieName: String, _ completionHandler: @escaping (Result<DaumSearchImageResult, APIError>) -> Void)
+    func setUpImageURL(_ url: URL, completion: @escaping (UIImage?) -> Void)
 }
 
 final class DaumSearchRepositoryImplementation: DaumSearchRepository {
@@ -32,5 +33,16 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
                 completionHandler(.failure(error))
             }
         }
+    }
+    
+    func setUpImageURL(_ url: URL, completion: @escaping (UIImage?) -> Void) {
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard let data = data, error == nil else {
+                return
+            }
+            
+            let imageData = UIImage(data: data)
+            completion(imageData)
+        }.resume()
     }
 }

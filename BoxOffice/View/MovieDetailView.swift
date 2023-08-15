@@ -21,7 +21,7 @@ final class MovieDetailView: UIView {
         let view = UIView()
         
         view.backgroundColor = UIColor(white: 0, alpha: 0.7)
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .blue
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -267,10 +267,7 @@ final class MovieDetailView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    let dispatchGroup = DispatchGroup()
-    
     func setUpContents(_ movieDetailInformationDTO: MovieDetailInformationDTO) {
-        dispatchGroup.enter()
         DispatchQueue.main.async {
             self.directorContentLabel.text = movieDetailInformationDTO.directors.joined(separator: ", ")
             self.productionYearContentLabel.text = movieDetailInformationDTO.productYear
@@ -282,41 +279,23 @@ final class MovieDetailView: UIView {
             self.movieActorsContentLabel.text = movieDetailInformationDTO.movieActors.joined(separator: ", ")
             
             self.movieActorsStackView.isHidden = movieDetailInformationDTO.isMovieActorsEmpty
-            self.dispatchGroup.leave()
-            self.dispatchGroup.notify(queue: .main) {
-                self.hideLoading()
-                self.activityIndicatorView.stopAnimating()
-            }
         }
     }
     
     func setUpImageContent(_ movieDetailImageDTO: MovieDetailImageDTO) {
-        dispatchGroup.enter()
-        guard let imageURL = URL(string: movieDetailImageDTO.imageURL) else { return }
-        URLSession.shared.dataTask(with: imageURL) { data, _, error in
-            guard let data = data, error == nil else {
-                return
-            }
-            
+//        guard let imageURL = URL(string: movieDetailImageDTO.imageURL) else { return }
+        
             DispatchQueue.main.async {
                 let imageRatio = Double(movieDetailImageDTO.height) / Double(movieDetailImageDTO.width)
                 let imageWidth = self.bounds.width
                 
-              
                 self.imageView.heightAnchor.constraint(equalToConstant: imageWidth * imageRatio).isActive = true
-                self.imageView.image = UIImage(data: data)
-                
-                self.dispatchGroup.leave()
-                self.dispatchGroup.notify(queue: .main) {
-                    self.hideLoading()
-                    self.activityIndicatorView.stopAnimating()
-                }
-            }
-        }.resume()
+                self.imageView.image = UIImage(data: movieDetailImageDTO.imageURL)
+        }
     }
     
     private func setUpLayout() {
-        showLoading()
+//        showLoading()
         setUpScrollViewLayout()
         setUpContentViewLayout()
         setUpImageViewLayout()

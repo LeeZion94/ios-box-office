@@ -5,9 +5,12 @@
 //  Created by Zion, Hemg on 2023/08/09.
 //
 
+import UIKit
+
 protocol MovieDetailViewControllerUseCase {
     var delegate: MovieDetailViewControllerUseCaseDelegate? { get set }
     func fetchMovieDetailInformation(_ movieCode: String, _ movieName: String)
+    //    func fetchMovieDetailImage(_ imageURL: URL, completion: @escaping (UIImage?) -> Void)
     var movieCode: String { get }
     var movieName: String { get }
 }
@@ -26,8 +29,11 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
         self.movieCode = movieCode
     }
     
+    let dispatchGroup = DispatchGroup()
     func fetchMovieDetailInformation(_ movieCode: String, _ movieName: String) {
+        dispatchGroup.enter()
         boxOfficeRepository.fetchMovieDetailInformation(movieCode) { result in
+            self.dispatchGroup.leave()
             switch result {
             case .success(let result):
                 let movieDetailInformationDTO = self.setUpMovieDetailInformationDTO(result.movieInformationResult.movieInformation)
@@ -38,28 +44,40 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
             }
         }
         
+        dispatchGroup.enter()
         daumSearchRepository.fetchDaumImageSearchInformation(movieName) { result in
             switch result {
             case .success(let result):
-                guard let movieDetailImageDTO = self.setUpMovieDetailImageDTO(result) else {
+                guard let imageData = result.documents.first?.imageURL.data(using: .utf8) else { return }
+                guard let movieDetailImageDTO = self.setUpMovieDetailImageDTO(result, imageData) else {
                     let error = APIError.dataTransferFail
-                    
+                    self.dispatchGroup.leave()
                     self.delegate?.failFetchMovieDetailImage(error.errorDescription)
                     return
                 }
                 
                 self.delegate?.completeFetchMovieDetailImage(movieDetailImageDTO)
             case .failure(let error):
+                self.dispatchGroup.leave()
                 self.delegate?.failFetchMovieDetailImage(error.errorDescription)
             }
         }
     }
+    
+    //    func fetchMovieDetailImage(_ imageURL: URL, completion: @escaping (UIImage?) -> Void) {
+    //        daumSearchRepository.setUpImageURL(imageURL) { image in
+    //            completion(image)
+    //        }
+    //    }
 }
 
 extension MovieDetailViewControllerUseCaseImplementation {
-    private func setUpMovieDetailImageDTO(_ daumSearchImageResult: DaumSearchImageResult) -> MovieDetailImageDTO? {
+    private func setUpMovieDetailImageDTO(_ daumSearchImageResult: DaumSearchImageResult, _ imageData: Data) -> MovieDetailImageDTO? {
         guard let imageInformation = daumSearchImageResult.documents.first else { return nil }
-        let movieDetailImageDTO = MovieDetailImageDTO(imageURL: imageInformation.imageURL,
+        
+//        let imageData = Data()
+        
+        let movieDetailImageDTO = MovieDetailImageDTO(imageURL: imageData,
                                                       width: imageInformation.width,
                                                       height: imageInformation.height)
         
