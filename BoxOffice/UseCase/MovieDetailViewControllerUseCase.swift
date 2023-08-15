@@ -10,7 +10,6 @@ import UIKit
 protocol MovieDetailViewControllerUseCase {
     var delegate: MovieDetailViewControllerUseCaseDelegate? { get set }
     func fetchMovieDetailInformation(_ movieCode: String, _ movieName: String)
-    //    func fetchMovieDetailImage(_ imageURL: URL, completion: @escaping (UIImage?) -> Void)
     var movieCode: String { get }
     var movieName: String { get }
 }
@@ -48,12 +47,21 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
         daumSearchRepository.fetchDaumImageSearchInformation(movieName) { result in
             switch result {
             case .success(let result):
-                guard let imageData = result.documents.first?.imageURL.data(using: .utf8) else { return }
-                guard let movieDetailImageDTO = self.setUpMovieDetailImageDTO(result, imageData) else {
+                guard let imageData = result.documents.first?.imageURL else { return }
+                guard let movieDetailImageDTO = self.setUpMovieDetailImageDTO(result, imageData.data(using: .utf8)!) else {
                     let error = APIError.dataTransferFail
                     self.dispatchGroup.leave()
                     self.delegate?.failFetchMovieDetailImage(error.errorDescription)
                     return
+                }
+                
+                self.daumSearchRepository.fetchImageDataToURL(imageData) { result in
+                    switch result {
+                    case .success(let data):
+                        print(data)
+                    case .failure(let error):
+                        print(error)
+                    }
                 }
                 
                 self.delegate?.completeFetchMovieDetailImage(movieDetailImageDTO)
@@ -63,12 +71,6 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
             }
         }
     }
-    
-    //    func fetchMovieDetailImage(_ imageURL: URL, completion: @escaping (UIImage?) -> Void) {
-    //        daumSearchRepository.setUpImageURL(imageURL) { image in
-    //            completion(image)
-    //        }
-    //    }
 }
 
 extension MovieDetailViewControllerUseCaseImplementation {

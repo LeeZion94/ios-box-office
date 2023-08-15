@@ -9,7 +9,7 @@ import UIKit
 
 protocol DaumSearchRepository {
     func fetchDaumImageSearchInformation(_ movieName: String, _ completionHandler: @escaping (Result<DaumSearchImageResult, APIError>) -> Void)
-    func setUpImageURL(_ url: URL, completion: @escaping (UIImage?) -> Void)
+    func fetchImageDataToURL(_ url: String, completion: @escaping (Result<Data, APIError>) -> Void)
 }
 
 final class DaumSearchRepositoryImplementation: DaumSearchRepository {
@@ -35,14 +35,17 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
         }
     }
     
-    func setUpImageURL(_ url: URL, completion: @escaping (UIImage?) -> Void) {
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            guard let data = data, error == nil else {
-                return
+    func fetchImageDataToURL(_ url: String, completion: @escaping (Result<Data, APIError>) -> Void) {
+        let path = ""
+        let queryItem: [String: Any] = ["": ""]
+        let header: [String: Any] = ["": ""]
+        sessionProvider.requestData(url, path, queryItem, header) { result in
+            switch result {
+            case .success(let data):
+                print(data)
+            case .failure(let error):
+                print(error)
             }
-            
-            let imageData = UIImage(data: data)
-            completion(imageData)
-        }.resume()
+        }
     }
 }
