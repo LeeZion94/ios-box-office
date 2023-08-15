@@ -17,6 +17,14 @@ final class MovieDetailView: UIView {
         return activityIndicatorView
     }()
     
+    private let loadingView: UIView = {
+        let view = UIView()
+        
+        view.backgroundColor = .systemBackground
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
     private let scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         
@@ -276,16 +284,19 @@ final class MovieDetailView: UIView {
     }
     
     func setUpImageContent(_ movieDetailImageDTO: MovieDetailImageDTO) {
-        guard let imageURL = URL(string: movieDetailImageDTO.imageURL),
-                let imageData = try? Data(contentsOf: imageURL) else { return }
-
         DispatchQueue.main.async {
             let imageRatio = Double(movieDetailImageDTO.height) / Double(movieDetailImageDTO.width)
             let imageWidth = self.bounds.width
             
-            self.activityIndicatorView.stopAnimating()
             self.imageView.heightAnchor.constraint(equalToConstant: imageWidth * imageRatio).isActive = true
-            self.imageView.image = UIImage(data: imageData)
+            self.imageView.image = UIImage(data: movieDetailImageDTO.imageData)
+        }
+    }
+    
+    func hideLoadingView() {
+        DispatchQueue.main.async {
+            self.activityIndicatorView.stopAnimating()
+            self.loadingView.isHidden = true
         }
     }
     
@@ -302,7 +313,7 @@ final class MovieDetailView: UIView {
         setUpProductionNationStackViewLayout()
         setUpGenresStackViewLayout()
         setUpMovieActorsStackViewLayout()
-        setUpActivityIndicatorViewLayout()
+        setUpLoadingViewLayout()
     }
 }
 
@@ -441,8 +452,24 @@ extension MovieDetailView {
         addSubview(activityIndicatorView)
         
         NSLayoutConstraint.activate([
-            activityIndicatorView.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
-            activityIndicatorView.centerYAnchor.constraint(equalTo: imageView.centerYAnchor)
+            activityIndicatorView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            activityIndicatorView.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+    }
+    
+    private func setUpLoadingViewLayout() {
+        addSubview(loadingView)
+        NSLayoutConstraint.activate([
+            loadingView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            loadingView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            loadingView.topAnchor.constraint(equalTo: topAnchor),
+            loadingView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        loadingView.addSubview(activityIndicatorView)
+        NSLayoutConstraint.activate([
+            activityIndicatorView.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
+            activityIndicatorView.centerYAnchor.constraint(equalTo: loadingView.centerYAnchor)
         ])
     }
 }

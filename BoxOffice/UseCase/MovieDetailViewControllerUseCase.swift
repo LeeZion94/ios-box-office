@@ -5,10 +5,11 @@
 //  Created by Zion, Hemg on 2023/08/09.
 //
 
+import Foundation
+
 protocol MovieDetailViewControllerUseCase {
     var delegate: MovieDetailViewControllerUseCaseDelegate? { get set }
-    func fetchMovieDetailInformation(_ movieCode: String)
-    func fetchMovieDetailImage(_ movieName: String)
+    func fetchMovieDetailInformation(_ movieCode: String, _ movieName: String)
 }
 
 final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewControllerUseCase {
@@ -21,42 +22,80 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
         self.daumSearchRepository = daumSearchRepository
     }
     
-    func fetchMovieDetailInformation(_ movieCode: String) {
-        boxOfficeRepository.fetchMovieDetailInformation(movieCode) { result in
+    func fetchMovieDetailInformation(_ movieCode: String, _ movieName: String) {
+        let dispatchGroup = DispatchGroup()
+        
+        DispatchQueue.global().async {
+            self.fetchMovieDescription(movieCode, dispatchGroup)
+            self.fetchMovieImageInformation(movieName, dispatchGroup)
+
+            let waitResult = dispatchGroup.wait(timeout: .now() + 15)
+
+            if waitResult == .success {
+                self.delegate?.completeFetchMovieDetailInformation()
+            } else {
+                let timeOutError = APIError.requestTimeOut
+                
+                self.delegate?.failFetchMovieDetailInformation(timeOutError.errorDescription)
+            }
+        }
+    }
+    
+    private func fetchMovieDescription(_ movieCode: String, _ dispatchGroup: DispatchGroup) {
+        dispatchGroup.enter()
+        self.boxOfficeRepository.fetchMovieDetailInformation(movieCode) { result in
+            print("movie Detail 완료")
+            dispatchGroup.leave()
             switch result {
             case .success(let result):
                 let movieDetailInformationDTO = self.setUpMovieDetailInformationDTO(result.movieInformationResult.movieInformation)
                 
-                self.delegate?.completeFetchMovieDetailInformation(movieDetailInformationDTO)
+                self.delegate?.completeFetMoviewDescription(movieDetailInformationDTO)
             case .failure(let error):
                 self.delegate?.failFetchMovieDetailInformation(error.errorDescription)
             }
         }
     }
     
-    func fetchMovieDetailImage(_ movieName: String) {
-        daumSearchRepository.fetchDaumImageSearchInformation(movieName) { result in
+    private func fetchMovieImageInformation(_ movieName: String, _ dispatchGroup: DispatchGroup) {
+        dispatchGroup.enter()
+        self.daumSearchRepository.fetchDaumImageSearchInformation(movieName) { result in
+            print("moview Image 완료")
             switch result {
             case .success(let result):
-                guard let movieDetailImageDTO = self.setUpMovieDetailImageDTO(result) else {
+                guard let imageInformation = result.documents.first else {
                     let error = APIError.dataTransferFail
                     
-                    self.delegate?.failFetchMovieDetailImage(error.errorDescription)
+                    self.delegate?.failFetchMovieDetailInformation(error.errorDescription)
                     return
                 }
                 
+                self.fetchImageDataFormURL(imageInformation, dispatchGroup)
+            case .failure(let error):
+                self.delegate?.failFetchMovieDetailInformation(error.errorDescription)
+            }
+        }
+    }
+    
+    private func fetchImageDataFormURL(_ imageInformation: DaumSearchImageResult.ImageInformation, _ dispatchGroup: DispatchGroup) {
+        self.daumSearchRepository.fetchDaumImageDataFormURL(imageInformation.imageURL) { result in
+            dispatchGroup.leave()
+            print("image 변환 완료")
+            switch result {
+            case .success(let data):
+                let movieDetailImageDTO = self.setUpMovieDetailImageDTO(imageInformation, data)
+                
                 self.delegate?.completeFetchMovieDetailImage(movieDetailImageDTO)
             case .failure(let error):
-                self.delegate?.failFetchMovieDetailImage(error.errorDescription)
+                self.delegate?.failFetchMovieDetailInformation(error.errorDescription)
             }
         }
     }
 }
 
 extension MovieDetailViewControllerUseCaseImplementation {
-    private func setUpMovieDetailImageDTO(_ daumSearchImageResult: DaumSearchImageResult) -> MovieDetailImageDTO? {
-        guard let imageInformation = daumSearchImageResult.documents.first else { return nil }
-        let movieDetailImageDTO = MovieDetailImageDTO(imageURL: imageInformation.imageURL,
+    private func setUpMovieDetailImageDTO(_ imageInformation: DaumSearchImageResult.ImageInformation, _ imageData: Data) -> MovieDetailImageDTO {
+        let movieDetailImageDTO = MovieDetailImageDTO(imageData: imageData,
                                             width: imageInformation.width,
                                             height: imageInformation.height)
 

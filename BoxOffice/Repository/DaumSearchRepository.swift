@@ -9,6 +9,7 @@ import Foundation
 
 protocol DaumSearchRepository: CanMakeURLRequest {
     func fetchDaumImageSearchInformation(_ movieName: String, _ completionHandler: @escaping (Result<DaumSearchImageResult, APIError>) -> Void)
+    func fetchDaumImageDataFormURL(_ urlString: String, _ completionHandler: @escaping (Result<Data, APIError>) -> Void)
 }
 
 final class DaumSearchRepositoryImplementation: DaumSearchRepository {
@@ -30,6 +31,20 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
             switch result {
             case .success(let data):
                 self.decoder.decodeResponseData(data, completionHandler)
+            case .failure(let error):
+                completionHandler(.failure(error))
+            }
+        }
+    }
+    
+    func fetchDaumImageDataFormURL(_ urlString: String, _ completionHandler: @escaping (Result<Data, APIError>) -> Void) {
+        guard let url = URL(string: urlString) else { return }
+        let urlRequest = URLRequest(url: url)
+        
+        sessionProvider.requestData(urlRequest) { result in
+            switch result {
+            case .success(let data):
+                completionHandler(.success(data))
             case .failure(let error):
                 completionHandler(.failure(error))
             }

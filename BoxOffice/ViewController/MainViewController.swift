@@ -150,14 +150,14 @@ extension MainViewController: UICollectionViewDelegate {
         let movieInformation = diffableDataSource?.snapshot().itemIdentifiers[indexPath.row]
         let movieCode = movieInformation?.movieCode ?? ""
         let movieName = movieInformation?.movieName ?? ""
-        
+
         let sessionProvider: URLSessionProvider = URLSessionProviderImplementation()
         let daumSearchRepository: DaumSearchRepository = DaumSearchRepositoryImplementation(sessionProvider: sessionProvider)
         let boxOfficeRepository: BoxOfficeRepository = BoxOfficeRepositoryImplementation(sessionProvider: sessionProvider)
         let usecase = MovieDetailViewControllerUseCaseImplementation(boxOfficeRepository: boxOfficeRepository,
                                                                      daumSearchRepository: daumSearchRepository)
         let movieDetailViewController = MovieDetailViewController(usecase: usecase, movieCode: movieCode, movieName: movieName)
-        
+
         usecase.delegate = movieDetailViewController
         navigationController?.pushViewController(movieDetailViewController, animated: true)
         collectionView.deselectItem(at: indexPath, animated: true)
