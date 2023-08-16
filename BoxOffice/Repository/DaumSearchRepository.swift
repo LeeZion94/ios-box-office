@@ -37,12 +37,13 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
     
     func fetchImageDataToURL(_ url: String, completion: @escaping (Result<Data, APIError>) -> Void) {
         let path = ""
-        let queryItem: [String: Any] = ["": ""]
-        let header: [String: Any] = ["": ""]
+        let queryItem: [String: Any] = [:]
+        let header: [String: Any] = [:]
+        
         sessionProvider.requestData(url, path, queryItem, header) { result in
             switch result {
             case .success(let data):
-                print(data)
+                completion(.success(data))
             case .failure(let error):
                 print(error)
             }

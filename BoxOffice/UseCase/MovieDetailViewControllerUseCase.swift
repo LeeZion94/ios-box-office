@@ -59,6 +59,7 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
                     switch result {
                     case .success(let data):
                         print(data)
+//                        let movieDetailImage = self.setUpMovieDetailImageDTO(movieDetailImageDTO, data)
                     case .failure(let error):
                         print(error)
                     }
@@ -76,8 +77,6 @@ final class MovieDetailViewControllerUseCaseImplementation: MovieDetailViewContr
 extension MovieDetailViewControllerUseCaseImplementation {
     private func setUpMovieDetailImageDTO(_ daumSearchImageResult: DaumSearchImageResult, _ imageData: Data) -> MovieDetailImageDTO? {
         guard let imageInformation = daumSearchImageResult.documents.first else { return nil }
-        
-//        let imageData = Data()
         
         let movieDetailImageDTO = MovieDetailImageDTO(imageURL: imageData,
                                                       width: imageInformation.width,
