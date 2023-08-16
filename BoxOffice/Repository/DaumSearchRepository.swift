@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol DaumSearchRepository: CanMakeURLRequest {
+protocol DaumSearchRepository {
     func fetchDaumImageSearchInformation(_ movieName: String, _ completionHandler: @escaping (Result<DaumSearchImageResult, APIError>) -> Void)
     func fetchDaumImageDataFormURL(_ urlString: String, _ completionHandler: @escaping (Result<Data, APIError>) -> Void)
 }
@@ -22,12 +22,10 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
     }
     
     func fetchDaumImageSearchInformation(_ movieName: String, _ completionHandler: @escaping (Result<DaumSearchImageResult, APIError>) -> Void) {
-        let queryItem: [String: Any] = ["query": "\(movieName) 영화 포스터"]
-        let header = "KakaoAK \(APIKey.daumSearch)"
-        var urlRequest = setUpRequestURL(BaseURL.daumSearch, DaumSearchURLPath.image, queryItem)
+        let daumImageSearchInformation = DaumSearchEndPoint(urlInformation: .image(movieName: movieName))
+        let header = ["Authorization": "KakaoAK \(APIKey.daumSearch)"]
         
-        urlRequest?.setValue(header, forHTTPHeaderField: "Authorization")
-        sessionProvider.requestData(urlRequest) { result in
+        sessionProvider.requestData(url: daumImageSearchInformation.url, header: header) { result in
             switch result {
             case .success(let data):
                 self.decoder.decodeResponseData(data, completionHandler)
@@ -38,10 +36,9 @@ final class DaumSearchRepositoryImplementation: DaumSearchRepository {
     }
     
     func fetchDaumImageDataFormURL(_ urlString: String, _ completionHandler: @escaping (Result<Data, APIError>) -> Void) {
-        guard let url = URL(string: urlString) else { return }
-        let urlRequest = URLRequest(url: url)
-        
-        sessionProvider.requestData(urlRequest) { result in
+        let url = URL(string: urlString)
+    
+        sessionProvider.requestData(url: url, header: nil) { result in
             switch result {
             case .success(let data):
                 completionHandler(.success(data))

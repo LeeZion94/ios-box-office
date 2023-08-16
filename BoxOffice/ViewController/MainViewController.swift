@@ -117,6 +117,17 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         setUpDiffableDataSource()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        navigationController?.isToolbarHidden = false
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        navigationController?.isToolbarHidden = true
+    }
     
     private func setUpViewController() {
         view.backgroundColor = .systemBackground
@@ -124,8 +135,6 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
     }
     
     private func setUpToolBar() {
-        navigationController?.isToolbarHidden = false
-        
         let leftFlexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
         let barButtonItem = UIBarButtonItem(title: "화면 모드 변경", style: .plain, target: self, action: #selector(didTappedChangeMode))
         let rightflexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
