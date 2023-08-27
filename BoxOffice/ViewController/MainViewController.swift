@@ -18,6 +18,7 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
     }
     
     private let usecase: MainViewControllerUseCase
+    private var targetDate: String = ""
     
     private lazy var activityIndicatorView: UIActivityIndicatorView = {
         let activityIndicatorView = UIActivityIndicatorView()
@@ -76,6 +77,7 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
         setUpViewController()
         setUpViewControllerContents()
         setUpDiffableDataSource()
+        setUpNavigationBar()
     }
     
     private func setUpViewController() {
@@ -120,6 +122,29 @@ final class MainViewController: UIViewController, CanShowNetworkRequestFailureAl
             self.activityIndicatorView.stopAnimating()
         }
     }
+    
+    private func setUpNavigationBar() {
+        let showCalendarAction = UIAction(title: "날짜 선택") { [weak self] _ in
+            guard let self else { return }
+            let vc = CalendarViewController(targetDate: self.targetDate)
+            vc.delegate = self
+            self.present(vc, animated: true)
+        }
+        
+        let showCalendarButton = UIBarButtonItem(primaryAction: showCalendarAction)
+        navigationItem.rightBarButtonItem = showCalendarButton
+    }
+    
+    private func collectionViewUpDate() {
+        usecase.fetchDailyBoxOffice(targetDate: self.targetDate)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd"
+        if let date = dateFormatter.date(from: self.targetDate) {
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            navigationItem.title = dateFormatter.string(from: date)
+        }
+        collectionView.reloadData()
+    }
 }
 
 // MARK: - MainViewControllerUseCaseDelegate
@@ -163,5 +188,14 @@ extension MainViewController: UICollectionViewDelegate {
         usecase.delegate = movieDetailViewController
         navigationController?.pushViewController(movieDetailViewController, animated: true)
         collectionView.deselectItem(at: indexPath, animated: true)
+    }
+}
+
+extension MainViewController: TargetDateDelegate {
+    func setUpTargetDate(targetDate: String) {
+        DispatchQueue.main.async {
+            self.targetDate = targetDate
+            self.collectionViewUpDate()
+        }
     }
 }
